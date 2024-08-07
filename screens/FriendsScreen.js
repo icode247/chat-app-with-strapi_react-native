@@ -14,7 +14,7 @@ import { useAuth } from "../context/AuthContext";
 const FriendsScreen = () => {
   const navigation = useNavigation();
   const [users, setUsers] = useState([]);
-  const { isAuthenticated, activeUser } = useAuth();
+  const { isAuthenticated, activeUser, getToken } = useAuth();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -23,10 +23,20 @@ const FriendsScreen = () => {
   }, [isAuthenticated, navigation]);
 
   const fetchUsers = async () => {
+    const token = await getToken();
     try {
       const response = await fetch(
-        `${backendBaseUrl}/api/users?filters[id][$ne]=${activeUser.id}`
+        `${backendBaseUrl}/api/users?filters[id][$ne]=${activeUser.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const usersData = await response.json();
       setUsers(usersData);
     } catch (error) {

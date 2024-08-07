@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeUser, setActiveUser] = useState(null);
- 
+
   const saveToken = async (token) => {
     try {
       await AsyncStorage.setItem("authToken", token);
@@ -36,59 +36,62 @@ export const AuthProvider = ({ children }) => {
       console.error("Error clearing token:", error);
     }
   };
-  const register = async (username, email, password) => {
-    try {
-      const response = await fetch(`${backendBaseUrl}/ap/auth/local/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: username,
-          email: email,
-          password: password,
-        }),
-      });
-      const responseData = await response.json();
-      if (responseData.jwt) {
-        return true;
-      } else {
-        setAuthError("Invalid details");
+  const register = (username, email, password) => {
+    return fetch(`${backendBaseUrl}/api/auth/local/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: username,
+        email: email,
+        password: password,
+      }),
+    })
+      .then((response) => response.json())
+      .then((responseData) => {
+        if (responseData.jwt) {
+          return true;
+        } else {
+          setAuthError("Invalid details");
+          return false;
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        setAuthError("Error creating user");
         return false;
-      }
-    } catch (error) {
-      setAuthError("Error creating user");
-      return false;
-    }
+      });
   };
 
-  const login = async (email, password) => {
-    try {
-      const response = await fetch(`${backendBaseUrl}/api/auth/local/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          identifier: email,
-          password: password,
-        }),
-      });
-      const responseData = await response.json();
-      if (responseData.jwt) {
-        setIsAuthenticated(true);
-        saveToken(responseData.jwt);
-        setActiveUser(responseData.user)
-        return true;
-      } else {
-        setAuthError("Incorrect email or password");
+  const login = (email, password) => {
+    return fetch(`${backendBaseUrl}/api/auth/local/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        identifier: email,
+        password: password,
+      }),
+    })
+      .then((response) => response.json())
+      .then((responseData) => {
+        if (responseData.jwt) {
+          setIsAuthenticated(true);
+          saveToken(responseData.jwt);
+          setActiveUser(responseData.user);
+          return true;
+        } else {
+          setAuthError("Incorrect email or password");
+          return false;
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        setAuthError("Error occurred");
         return false;
-      }
-    } catch (error) {
-      console.log(error);
-      setAuthError("Error occured");
-      return false;
-    }
+      });
   };
 
   const logout = () => {
@@ -98,7 +101,16 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, register, login, logout, authError, getToken, clearToken, activeUser }}
+      value={{
+        isAuthenticated,
+        register,
+        login,
+        logout,
+        authError,
+        getToken,
+        clearToken,
+        activeUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

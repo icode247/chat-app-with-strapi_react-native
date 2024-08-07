@@ -7,6 +7,7 @@ const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { register, authError, isAuthenticated } = useAuth();
+  
   useEffect(() => {
     if (isAuthenticated) {
       navigation.navigate("Chat");

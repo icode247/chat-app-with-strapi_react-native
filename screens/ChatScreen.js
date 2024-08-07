@@ -17,11 +17,9 @@ import { useRoute } from "@react-navigation/native";
 const ChatScreen = ({ navigation }) => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState("");
-  const { isAuthenticated, activeUser } = useAuth();
+  const { isAuthenticated, activeUser, getToken } = useAuth();
   const route = useRoute();
   const { friendId } = route.params;
-
-  const socket = WebSocketService();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -30,26 +28,47 @@ const ChatScreen = ({ navigation }) => {
   }, [isAuthenticated, navigation]);
 
   useEffect(() => {
-    fetchMessages();
+    let socket;
 
-    socket.on("connect", () => {
-      socket.on("message:create", (message) => {
-        setMessages((prevMessages) => [...prevMessages, message.data]);
-      });
-    });
+    const connectWebSocket = async () => {
+      const token = await getToken();
+      if (token) {
+        socket = WebSocketService(token);
+
+        socket.on("connect", () => {
+          console.log("Connected to WebSocket");
+        });
+  
+        socket.on("message:create", (message) => {
+          setMessages((prevMessages) => [...prevMessages, message.data]);
+        });
+      }
+    };
+
+    fetchMessages();
+    connectWebSocket();
 
     return () => {
-      socket.off("message:create");
+      if (socket) {
+        socket.off("message:create");
+        socket.disconnect();
+      }
     };
   }, []);
 
   const fetchMessages = async () => {
+    const token = await getToken();
     try {
       const response = await fetch(
-        `${backendBaseUrl}/api/messages?populate=*&filters[$or][0][sender][id][$eq]=${friendId}&filters[$or][0][recipient][id][$eq]=${activeUser.id}&filters[$or][1][sender][id][$eq]=${activeUser.id}&filters[$or][1][recipient][id][$eq]=${friendId}`
+        `${backendBaseUrl}/api/messages?populate=*&filters[$or][0][sender][id][$eq]=${friendId}&filters[$or][0][recipient][id][$eq]=${activeUser.id}&filters[$or][1][sender][id][$eq]=${activeUser.id}&filters[$or][1][recipient][id][$eq]=${friendId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
       const responseData = await response.json();
-
       setMessages(responseData.data);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -68,9 +87,11 @@ const ChatScreen = ({ navigation }) => {
     };
 
     try {
+      const token = await getToken();
       await fetch(`${backendBaseUrl}/api/messages`, {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(newMessage),
