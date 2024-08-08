@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  ScrollView
 } from "react-native";
 import { WebSocketService } from "../services/WebSocketService";
 import { format } from "date-fns";
@@ -38,7 +39,7 @@ const ChatScreen = ({ navigation }) => {
         socket.on("connect", () => {
           console.log("Connected to WebSocket");
         });
-  
+
         socket.on("message:create", (message) => {
           setMessages((prevMessages) => [...prevMessages, message.data]);
         });
@@ -109,19 +110,22 @@ const ChatScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.messageContainer}>
-            <Text style={styles.sender}>
-              {item.attributes.sender?.data?.attributes?.username}
-            </Text>
+      <ScrollView style={styles.messageContainer}>
+        {messages.map((item, index) => (
+          <View
+            key={item.id.toString()}
+            style={[
+              styles.message,
+              item?.attributes?.sender?.data?.id === activeUser.id
+                ? styles.sentMessage
+                : styles.receivedMessage,
+            ]}
+          >
             <Text style={styles.messageText}>{item.attributes.content}</Text>
             <Text style={styles.timestamp}>{item.attributes.timestamp}</Text>
           </View>
-        )}
-      />
+        ))}
+      </ScrollView>
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -142,46 +146,60 @@ const ChatScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingBottom: 10,
-    margin: 10,
+    backgroundColor: "#f2f2f2",
+  },
+  messageContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  message: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 12,
+    marginVertical: 8,
+    maxWidth: "80%",
+  },
+  sentMessage: {
+    alignSelf: "flex-end",
+    backgroundColor: "#0084ff",
+    color: "#fff",
+  },
+  receivedMessage: {
+    alignSelf: "flex-start",
+  },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   input: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
     fontSize: 16,
-    backgroundColor: "lightgray",
-    color: "white",
-    borderRadius: 20,
-    marginRight: 10,
+    paddingVertical: 8,
+    color: "#333",
   },
   sendButton: {
-    backgroundColor: "blue",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    backgroundColor: "#0084ff",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginLeft: 8,
   },
   sendButtonText: {
-    color: "white",
+    color: "#fff",
     fontSize: 16,
-  },
-  messageContainer: {
-    marginVertical: 5,
-  },
-  sender: {
-    fontWeight: "bold",
-  },
-  messageText: {
-    marginVertical: 2,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: "gray",
   },
 });
 
