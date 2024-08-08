@@ -89,7 +89,7 @@ const ChatScreen = ({ navigation }) => {
 
     try {
       const token = await getToken();
-      await fetch(`${backendBaseUrl}/api/messages`, {
+      await fetch(`${backendBaseUrl}/api/messages?populate=*`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
